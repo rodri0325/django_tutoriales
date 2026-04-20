@@ -1,34 +1,24 @@
 version: '3.8'
 
 services:
-  db:
-    image: mysql:8.0
-    volumes:
-      - mysql_data:/var/lib/mysql
-    environment:
-      - MYSQL_DATABASE=tienda_db
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=secret_password
-      - MYSQL_ROOT_PASSWORD=secret_password
-
   # Servicio de tu API Django
   web:
     build: .
     # CAMBIO 1: Usamos Gunicorn en lugar de runserver
+    # 'Tienda' es la carpeta donde está tu wsgi.py
     command: gunicorn Tienda.wsgi:application --bind 0.0.0.0:8000
     volumes:
-      # Hot-Reload: Mapeamos la carpeta actual para que los cambios de código se reflejen sin reiniciar
       - .:/app
-    depends_on:
-      - db
     environment:
-      # Estas variables deben coincidir con lo que espera tu settings.py
-      - DB_NAME=tienda_db
-      - DB_USER=root
-      - DB_PASSWORD=secret_password
-      - DB_HOST=db  # ¡OJO! Aquí usamos el nombre del servicio 'db' como host
+      # Tus datos de RDS MySQL
+      - DB_NAME=djangodocker
+      - DB_USER=admin
+      - DB_PASSWORD=0325Loco*
+      - DB_HOST=teis20251.cv2aqi0gc302.us-east-1.rds.amazonaws.com
       - DB_PORT=3306
-    # NOTA: Ya no hay sección 'ports' aquí. Django está aislado.
+      - DEBUG=1
+      - ALLOWED_HOSTS=100.26.35.5,localhost,127.0.0.1
+    # NOTA: No hay sección 'ports' aquí. Django está aislado.
 
   # CAMBIO 2: Agregamos el servicio Nginx
   nginx:
@@ -36,11 +26,9 @@ services:
     ports:
       - "80:80"  # Nginx es el único que da la cara a internet
     volumes:
-      # Inyectamos nuestro archivo de configuración en el contenedor
+      # Inyectamos nuestro archivo de configuración
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - web
 
-# Definición del volumen persistente
-volumes:
-  mysql_data:
+# No hay volumen de base de datos porque usas RDS externo
