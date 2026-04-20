@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  # Servicio de tu API Django
-  web:
+  # Servicio de tu API Django (v1 - MONOLITO)
+  web_django:
     build: .
-    # CAMBIO 1: Usamos Gunicorn en lugar de runserver
+    # Usamos Gunicorn como servidor WSGI
     # 'Tienda' es la carpeta donde está tu wsgi.py
     command: gunicorn Tienda.wsgi:application --bind 0.0.0.0:8000
     volumes:
@@ -20,6 +20,14 @@ services:
       - ALLOWED_HOSTS=100.26.35.5,localhost,127.0.0.1
     # NOTA: No hay sección 'ports' aquí. Django está aislado.
 
+  # Servicio del Microservicio Flask (v2 - EL ESTRANGULADOR)
+  pagos_flask:
+    build: ./microservicio_pagos
+    ports:
+      - "5000:5000"  # Solo para pruebas iniciales, luego lo cerraremos
+    depends_on:
+      - web_django
+
   # CAMBIO 2: Agregamos el servicio Nginx
   nginx:
     image: nginx:1.25-alpine
@@ -29,6 +37,7 @@ services:
       # Inyectamos nuestro archivo de configuración
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - web
+      - web_django
+      - pagos_flask
 
 # No hay volumen de base de datos porque usas RDS externo
